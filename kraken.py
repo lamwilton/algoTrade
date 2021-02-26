@@ -61,6 +61,7 @@ if __name__ == '__main__':
     k = KrakenAPI(api)
     print()
     while True:
+        time.sleep(50)
         ohlc = get_prices()
         buy = check_ema(ohlc)
 
@@ -91,4 +92,3 @@ if __name__ == '__main__':
                 print(str(out[0].iloc[0]))
                 logfile.write("\n")
 
-        time.sleep(60)
