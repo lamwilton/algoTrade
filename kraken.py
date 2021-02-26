@@ -10,7 +10,7 @@ from pykrakenapi import KrakenAPI
 
 
 def get_prices():
-    ohlc, last = k.get_ohlc_data("XDGUSD", interval=5)
+    ohlc, last = k.get_ohlc_data("XDGUSD", interval=30)
     ohlc = ohlc.sort_index()  # Sort by ascending dates for EMA
     ema10_ohlc4 = ta.ema(ta.ohlc4(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"]), length=10)
     ema21_ohlc4 = ta.ema(ta.ohlc4(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"]), length=21)
@@ -35,9 +35,9 @@ def check_ema(ohlc):
     :param ohlc:
     :return:
     """
-    if ohlc.EMA_10[0] > ohlc.EMA_21[0] and ohlc.EMA_10[1] <= ohlc.EMA_21[1]:
+    if ohlc.EMA_10[0] > ohlc.EMA_21[0]:
         return 1
-    if ohlc.EMA_10[0] < ohlc.EMA_21[0] and ohlc.EMA_10[1] >= ohlc.EMA_21[1]:
+    if ohlc.EMA_10[0] < ohlc.EMA_21[0]:
         return -1
     return 0
 
@@ -62,28 +62,26 @@ if __name__ == '__main__':
     k = KrakenAPI(api)
 
     last_ohlc = get_prices()
+    last_ema = last_ohlc.EMA_10[0] > last_ohlc.EMA_21[0]  # Record if EMA_10 is above EMA_21 or not
     while True:
         time.sleep(55)
         ohlc = get_prices()
-
+        new_ema = ohlc.EMA_10[0] > ohlc.EMA_21[0]
         # Check if prices are updated. If not do not do anything
-        if ohlc.iloc[0, 0] == last_ohlc.iloc[0, 0]:
-            buy = 0
-        else:
-            print(">> Prices updated")
-            last_ohlc = ohlc
-            buy = check_ema(ohlc)
-
         out = ""
-        if buy == 1:
-            out = buy_doge(50)
-        elif buy == -1:
-            out = sell_doge(50)
+        if new_ema != last_ema:
+            print(">> Detected EMA crossover")
+            last_ema = new_ema
+
+            if new_ema:
+                out = buy_doge(50)
+            elif not new_ema:
+                out = sell_doge(50)
 
         with open(logfilepath, 'a+') as logfile:
             curr_time = str(k.get_server_time()[0].astimezone("US/Pacific"))
 
-            if buy == 1 or buy == -1:
+            if new_ema != last_ema:
                 logfile.write("[" + curr_time + "] " + out['descr']['order'] + " Txid: " + out['txid'][0])
                 logfile.write("\n")
                 print("[" + curr_time + "] " + out['descr']['order'] + " Txid: " + out['txid'][0])
@@ -96,4 +94,3 @@ if __name__ == '__main__':
                 logfile.write("[" + curr_time + "] No action taken")
                 logfile.write("\n")
                 print("[" + curr_time + "] No action taken")
-
