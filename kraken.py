@@ -10,13 +10,13 @@ from pykrakenapi import KrakenAPI
 
 
 def get_prices():
-    ohlc, last = k.get_ohlc_data("XDGUSD", interval=60)
+    ohlc, last = k.get_ohlc_data("XDGUSD", interval=5)
+    ohlc = ohlc.sort_index()  # Sort by ascending dates for EMA
     ema10_ohlc4 = ta.ema(ta.ohlc4(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"]), length=10)
     ema21_ohlc4 = ta.ema(ta.ohlc4(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"]), length=21)
     ohlc = ohlc.join(ema10_ohlc4)
     ohlc: pd.DataFrame = ohlc.join(ema21_ohlc4)
-    ohlc.EMA_10 = ohlc.EMA_10.shift(-10)
-    ohlc.EMA_21 = ohlc.EMA_21.shift(-21)
+    ohlc = ohlc.sort_index(ascending=False)
     return ohlc
 
 
@@ -52,6 +52,7 @@ def sell_doge(volume):
 
 if __name__ == '__main__':
     keyfilepath = os.path.join(os.path.expanduser('~'), "Documents/kraken_credentials.txt")
+    logfilepath = os.path.join(os.path.expanduser('~'), "Documents/kraken_log.txt")
 
     with open(keyfilepath, 'r') as keyfile:
         key = keyfile.readline().strip('\n')
@@ -62,12 +63,11 @@ if __name__ == '__main__':
 
     last_ohlc = get_prices()
     while True:
-        time.sleep(50)
+        time.sleep(55)
         ohlc = get_prices()
-        # acc_balance = k.get_account_balance()
 
         # Check if prices are updated. If not do not do anything
-        if ohlc.equals(last_ohlc):
+        if ohlc.iloc[0, 0] == last_ohlc.iloc[0, 0]:
             buy = 0
         else:
             print(">> Prices updated")
@@ -80,23 +80,20 @@ if __name__ == '__main__':
         elif buy == -1:
             out = sell_doge(50)
 
-        logfilepath = os.path.join(os.path.expanduser('~'), "Documents/kraken_log.txt")
         with open(logfilepath, 'a+') as logfile:
-            logfile.write(str(k.get_server_time()[0].astimezone("US/Pacific")))
-            logfile.write("\n")
-            print(str(k.get_server_time()[0].astimezone("US/Pacific")))
+            curr_time = str(k.get_server_time()[0].astimezone("US/Pacific"))
 
             if buy == 1 or buy == -1:
-                logfile.write(out['descr']['order'] + " Txid: " + out['txid'][0])
+                logfile.write("[" + curr_time + "] " + out['descr']['order'] + " Txid: " + out['txid'][0])
                 logfile.write("\n")
-                print(out['descr']['order'] + " Txid: " + out['txid'][0])
+                print("[" + curr_time + "] " + out['descr']['order'] + " Txid: " + out['txid'][0])
 
                 out = k.get_closed_orders()
                 logfile.write(str(out[0].iloc[0]))
                 print(str(out[0].iloc[0]))
                 logfile.write("\n")
             else:
-                logfile.write("No action taken")
+                logfile.write("[" + curr_time + "] No action taken")
                 logfile.write("\n")
-                print("No action taken")
+                print("[" + curr_time + "] No action taken")
 
