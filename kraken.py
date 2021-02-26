@@ -5,7 +5,6 @@ import pandas as pd
 import pandas_ta as ta
 import os
 import time
-from datetime import datetime, timedelta
 
 from pykrakenapi import KrakenAPI
 
@@ -60,13 +59,12 @@ if __name__ == '__main__':
 
     api = krakenex.API(key=key, secret=b64secret)
     k = KrakenAPI(api)
-
+    print()
     while True:
         ohlc = get_prices()
         buy = check_ema(ohlc)
 
         acc_balance = k.get_account_balance()
-        #out = k.get_open_orders()
 
         out = ""
         if buy == 1:
@@ -82,9 +80,15 @@ if __name__ == '__main__':
             logfile.write(str(acc_balance))
             logfile.write("\n")
             print(str(acc_balance))
+
             if buy == 1 or buy == -1:
                 logfile.write(out['descr']['order'] + " Txid: " + out['txid'][0])
                 logfile.write("\n")
                 print(out['descr']['order'] + " Txid: " + out['txid'][0])
+
+                out = k.get_closed_orders()
+                logfile.write(str(out[0].iloc[0]))
+                print(str(out[0].iloc[0]))
+                logfile.write("\n")
 
         time.sleep(60)
