@@ -59,13 +59,20 @@ if __name__ == '__main__':
 
     api = krakenex.API(key=key, secret=b64secret)
     k = KrakenAPI(api)
-    print()
+
+    last_ohlc = get_prices()
     while True:
         time.sleep(50)
         ohlc = get_prices()
-        buy = check_ema(ohlc)
+        # acc_balance = k.get_account_balance()
 
-        acc_balance = k.get_account_balance()
+        # Check if prices are updated. If not do not do anything
+        if ohlc.equals(last_ohlc):
+            buy = 0
+        else:
+            print(">> Prices updated")
+            last_ohlc = ohlc
+            buy = check_ema(ohlc)
 
         out = ""
         if buy == 1:
@@ -78,9 +85,6 @@ if __name__ == '__main__':
             logfile.write(str(k.get_server_time()[0].astimezone("US/Pacific")))
             logfile.write("\n")
             print(str(k.get_server_time()[0].astimezone("US/Pacific")))
-            logfile.write(str(acc_balance))
-            logfile.write("\n")
-            print(str(acc_balance))
 
             if buy == 1 or buy == -1:
                 logfile.write(out['descr']['order'] + " Txid: " + out['txid'][0])
@@ -91,4 +95,8 @@ if __name__ == '__main__':
                 logfile.write(str(out[0].iloc[0]))
                 print(str(out[0].iloc[0]))
                 logfile.write("\n")
+            else:
+                logfile.write("No action taken")
+                logfile.write("\n")
+                print("No action taken")
 
