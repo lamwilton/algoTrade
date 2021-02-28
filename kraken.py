@@ -92,7 +92,7 @@ if __name__ == '__main__':
     while True:
         time.sleep(55)
         ohlc = get_prices(INTERVAL, SHORT_EMA, LONG_EMA)
-        new_ema = ohlc.EMA_10[0] > ohlc.EMA_21[0]
+        new_ema = ohlc[short_ema_column][0] > ohlc[long_ema_column][0]
         # Check if prices are updated. If not do not do anything
         out = ""
         if new_ema != last_ema:
