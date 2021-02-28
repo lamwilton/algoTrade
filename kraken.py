@@ -60,7 +60,7 @@ def sell_doge(volume):
 
 if __name__ == '__main__':
     # =============================== Constants ===============================
-    INTERVAL = 30
+    INTERVAL = 5
     SHORT_EMA = 10
     LONG_EMA = 50
     keyfilepath = os.path.join(os.path.expanduser('~'), "Documents/kraken_credentials.txt")
@@ -95,8 +95,10 @@ if __name__ == '__main__':
         new_ema = ohlc[short_ema_column][0] > ohlc[long_ema_column][0]
         # Check if prices are updated. If not do not do anything
         out = ""
+        action = False
         if new_ema != last_ema:
             print(">> Detected EMA crossover")
+            action = True
             last_ema = new_ema
 
             if new_ema:
@@ -107,7 +109,7 @@ if __name__ == '__main__':
         with open(logfilepath, 'a+') as logfile:
             curr_time = str(k.get_server_time()[0].astimezone("US/Pacific"))
 
-            if new_ema != last_ema:
+            if action:
                 logfile.write("[" + curr_time + "] " + out['descr']['order'] + " Txid: " + out['txid'][0])
                 logfile.write("\n")
                 print("[" + curr_time + "] " + out['descr']['order'] + " Txid: " + out['txid'][0])
