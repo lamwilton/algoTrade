@@ -9,11 +9,19 @@ import time
 from pykrakenapi import KrakenAPI
 
 
-def get_prices():
-    ohlc, last = k.get_ohlc_data("XDGUSD", interval=30)
+def get_prices(interval, short_ema, long_ema):
+    """
+    Return a ``pd.DataFrame`` of the OHLC data for a given pair and time interval (minutes). Also calculates the two
+        EMAs for crossing over
+    :param interval:
+    :param short_ema:
+    :param long_ema:
+    :return:
+    """
+    ohlc, last = k.get_ohlc_data("XDGUSD", interval=interval)
     ohlc = ohlc.sort_index()  # Sort by ascending dates for EMA
-    ema10_ohlc4 = ta.ema(ta.ohlc4(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"]), length=10)
-    ema21_ohlc4 = ta.ema(ta.ohlc4(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"]), length=21)
+    ema10_ohlc4 = ta.ema(ta.ohlc4(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"]), length=short_ema)
+    ema21_ohlc4 = ta.ema(ta.ohlc4(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"]), length=long_ema)
     ohlc = ohlc.join(ema10_ohlc4)
     ohlc: pd.DataFrame = ohlc.join(ema21_ohlc4)
     ohlc = ohlc.sort_index(ascending=False)
@@ -51,8 +59,14 @@ def sell_doge(volume):
 
 
 if __name__ == '__main__':
+    # =============================== Constants ===============================
+    INTERVAL = 30
+    SHORT_EMA = 10
+    LONG_EMA = 50
     keyfilepath = os.path.join(os.path.expanduser('~'), "Documents/kraken_credentials.txt")
     logfilepath = os.path.join(os.path.expanduser('~'), "Documents/kraken_log.txt")
+
+    # =============================== Main program =================================
 
     with open(keyfilepath, 'r') as keyfile:
         key = keyfile.readline().strip('\n')
@@ -61,11 +75,23 @@ if __name__ == '__main__':
     api = krakenex.API(key=key, secret=b64secret)
     k = KrakenAPI(api)
 
-    last_ohlc = get_prices()
-    last_ema = last_ohlc.EMA_10[0] > last_ohlc.EMA_21[0]  # Record if EMA_10 is above EMA_21 or not
+    short_ema_column = "EMA_" + str(SHORT_EMA)
+    long_ema_column = "EMA_" + str(LONG_EMA)
+
+    last_ohlc = get_prices(INTERVAL, SHORT_EMA, LONG_EMA)
+    last_ema = last_ohlc[short_ema_column][0] > last_ohlc[long_ema_column][0]  # Record if EMA_10 is above EMA_21 or not
+
+    print("Starting trading algorithm with interval = {interval} Short EMA = {short_EMA} Long EMA = {long_EMA}"
+          .format(interval=INTERVAL, short_EMA=SHORT_EMA, long_EMA=LONG_EMA))
+    with open(logfilepath, 'a+') as logfile:
+        logfile.write(
+            "Starting trading algorithm with interval = {interval} Short EMA = {short_EMA} Long EMA = {long_EMA}"
+            .format(interval=INTERVAL, short_EMA=SHORT_EMA, long_EMA=LONG_EMA))
+        logfile.write("\n")
+
     while True:
         time.sleep(55)
-        ohlc = get_prices()
+        ohlc = get_prices(INTERVAL, SHORT_EMA, LONG_EMA)
         new_ema = ohlc.EMA_10[0] > ohlc.EMA_21[0]
         # Check if prices are updated. If not do not do anything
         out = ""
