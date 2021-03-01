@@ -61,7 +61,7 @@ def sell_doge(volume):
 if __name__ == '__main__':
     # =============================== Constants ===============================
     INTERVAL = 5
-    SHORT_EMA = 10
+    SHORT_EMA = 5
     LONG_EMA = 50
     keyfilepath = os.path.join(os.path.expanduser('~'), "Documents/kraken_credentials.txt")
     logfilepath = os.path.join(os.path.expanduser('~'), "Documents/kraken_log.txt")
