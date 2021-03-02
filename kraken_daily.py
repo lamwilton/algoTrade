@@ -8,20 +8,20 @@ from pykrakenapi import KrakenAPI
 from pykrakenapi.pykrakenapi import KrakenAPIError
 
 
-def get_prices(pair, interval, fast, slow, signal):
+def get_prices(interval, fast, slow, signal, sma):
     """
-    Return a ``pd.DataFrame`` of the OHLC data for a given pair and time interval (minutes). Also calculates the two
-        EMAs for crossing over
-    :param pair: What crypto
+    Return a ``pd.DataFrame`` of the OHLC data for a given pair and time interval (minutes) and the indicators
+    :param sma: period of Simple Moving Average
     :param signal:
     :param slow:
     :param fast:
     :param interval:
-    :return: OHLC dataframe with MACD
+    :return: OHLC dataframe with MACD and SMA
     """
-    ohlc, last = k.get_ohlc_data(pair, interval=interval)
+    ohlc, last = k.get_ohlc_data("XDGUSD", interval=interval)
     ohlc = ohlc.sort_index()  # Sort by ascending dates for EMA
     _ = ohlc.ta.macd(fast=fast, slow=slow, signal=signal, min_periods=None, append=True)
+    _ = ohlc.ta.sma(length=sma, min_periods=None, append=True)
     ohlc = ohlc.sort_index(ascending=False)
     return ohlc
 
@@ -45,6 +45,7 @@ if __name__ == '__main__':
     FAST = 12
     SLOW = 26
     SIGNAL = 9
+    SMA = 18
     keyfilepath = os.path.join(os.path.expanduser('~'), "Documents/kraken_credentials.txt")
     logfilepath = os.path.join(os.path.expanduser('~'), "Documents/kraken_daily_log.txt")
 
@@ -71,15 +72,17 @@ if __name__ == '__main__':
     for pair in pair_list:
         time.sleep(10)
         macd_col = "MACDh_" + str(FAST) + "_" + str(SLOW) + "_" + str(SIGNAL)
+        sma_col = "SMA_{}".format(SMA)
         ohlc = get_prices(pair[0], INTERVAL, FAST, SLOW, SIGNAL)
         new_macd = ohlc[macd_col][0] > 0
         last_macd = ohlc[macd_col][1] > 0
+        sma = ohlc["high"][0] > ohlc[sma_col][0]
 
         # Check if prices are updated. If not do not do anything
         out = ""
         action = False
-        if new_macd != last_macd:
-            print(">> Detected MACD signal")
+        if new_macd != last_macd and sma:
+            print(">> Detected MACD signal as well as stock price is above SMA")
             action = True
 
             if new_macd:
