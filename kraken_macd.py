@@ -79,8 +79,10 @@ if __name__ == '__main__':
         new_macd = ohlc[macd_col][0] > 0
         # Check if prices are updated. If not do not do anything
         out = ""
+        action = False
         if new_macd != last_macd:
-            print(">> Detected EMA crossover")
+            print(">> Detected MACD signal")
+            action = True
             last_macd = new_macd
 
             if new_macd:
@@ -91,7 +93,7 @@ if __name__ == '__main__':
         with open(logfilepath, 'a+') as logfile:
             curr_time = str(k.get_server_time()[0].astimezone("US/Pacific"))
 
-            if new_macd != last_macd:
+            if action:
                 logfile.write("[" + curr_time + "] " + out['descr']['order'] + " Txid: " + out['txid'][0])
                 logfile.write("\n")
                 print("[" + curr_time + "] " + out['descr']['order'] + " Txid: " + out['txid'][0])
