@@ -5,6 +5,7 @@ import os
 import time
 
 from pykrakenapi import KrakenAPI
+from pykrakenapi.pykrakenapi import KrakenAPIError
 
 
 def get_prices(pair, interval, fast, slow, signal):
@@ -26,11 +27,16 @@ def get_prices(pair, interval, fast, slow, signal):
 
 
 def buy_coin(pair, volume):
-    return k.add_standard_order(pair=pair, type="buy", ordertype="market", volume=volume, validate=True)
+    return k.add_standard_order(pair=pair, type="buy", ordertype="market", volume=volume, validate=False)
 
 
 def sell_coin(pair, volume):
-    return k.add_standard_order(pair=pair, type="sell", ordertype="market", volume=volume, validate=True)
+    try:
+        out = k.add_standard_order(pair=pair, type="sell", ordertype="market", volume=volume, validate=False)
+        return out
+    except KrakenAPIError:
+        print("Insufficient funds, order cancelled")
+        return None
 
 
 if __name__ == '__main__':
@@ -59,7 +65,8 @@ if __name__ == '__main__':
             .format(interval=INTERVAL, fast=FAST, slow=SLOW, signal=SIGNAL))
         logfile.write("\n")
 
-    pair_list = [("XDGUSD", 100), ("XBTUSD", 0.0004)]  # List of cryptos and trade volumes
+    pair_list = [("XBTUSD", 0.0002), ("ETHUSD", 0.005), ("LTCUSD", 0.05), ("BCHUSD", 0.05), ("EOSUSD", 2.5),
+                 ("XDGUSD", 100)]  # List of cryptos and trade volumes
 
     for pair in pair_list:
         time.sleep(10)
@@ -83,7 +90,7 @@ if __name__ == '__main__':
         with open(logfilepath, 'a+') as logfile:
             curr_time = str(k.get_server_time()[0].astimezone("US/Pacific"))
 
-            if action:
+            if action and out is not None:
                 logfile.write("[" + curr_time + "] " + out['descr']['order'] + " Txid: " + out['txid'][0])
                 logfile.write("\n")
                 print("[" + curr_time + "] " + out['descr']['order'] + " Txid: " + out['txid'][0])
