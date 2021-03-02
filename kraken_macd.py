@@ -93,6 +93,7 @@ if __name__ == '__main__':
             print(">> Detected MACD signal as well as stock price is above SMA")
             action = True
             last_macd = new_macd
+            last_time = new_time
 
             if new_macd:
                 out = buy_doge(50)
