@@ -9,19 +9,20 @@ import time
 from pykrakenapi import KrakenAPI
 
 
-def get_prices(interval, fast, slow, signal):
+def get_prices(interval, fast, slow, signal, sma):
     """
-    Return a ``pd.DataFrame`` of the OHLC data for a given pair and time interval (minutes). Also calculates the two
-        EMAs for crossing over
+    Return a ``pd.DataFrame`` of the OHLC data for a given pair and time interval (minutes) and the indicators
+    :param sma: period of Simple Moving Average
     :param signal:
     :param slow:
     :param fast:
     :param interval:
-    :return: OHLC dataframe with MACD
+    :return: OHLC dataframe with MACD and SMA
     """
     ohlc, last = k.get_ohlc_data("XDGUSD", interval=interval)
     ohlc = ohlc.sort_index()  # Sort by ascending dates for EMA
     _ = ohlc.ta.macd(fast=fast, slow=slow, signal=signal, min_periods=None, append=True)
+    _ = ohlc.ta.sma(length=sma, min_periods=None, append=True)
     ohlc = ohlc.sort_index(ascending=False)
     return ohlc
 
@@ -45,10 +46,11 @@ def sell_doge(volume):
 
 if __name__ == '__main__':
     # =============================== Constants ===============================
-    INTERVAL = 5
+    INTERVAL = 30
     FAST = 12
     SLOW = 26
     SIGNAL = 9
+    SMA = 18
     keyfilepath = os.path.join(os.path.expanduser('~'), "Documents/kraken_credentials.txt")
     logfilepath = os.path.join(os.path.expanduser('~'), "Documents/kraken_log.txt")
 
@@ -62,7 +64,8 @@ if __name__ == '__main__':
     k = KrakenAPI(api)
 
     macd_col = "MACDh_" + str(FAST) + "_" + str(SLOW) + "_" + str(SIGNAL)
-    last_ohlc = get_prices(INTERVAL, FAST, SLOW, SIGNAL)
+    sma_col = "SMA_{}".format(SMA)
+    last_ohlc = get_prices(INTERVAL, FAST, SLOW, SIGNAL, SMA)
     last_macd = last_ohlc[macd_col][0] > 0
 
     print("Starting MACD trading algorithm with interval = {interval} fast={fast} slow={slow} signal={signal}"
@@ -75,13 +78,16 @@ if __name__ == '__main__':
 
     while True:
         time.sleep(55)
-        ohlc = get_prices(INTERVAL, FAST, SLOW, SIGNAL)
+        ohlc = get_prices(INTERVAL, FAST, SLOW, SIGNAL, SMA)
         new_macd = ohlc[macd_col][0] > 0
+        sma = ohlc["high"][0] > ohlc[sma_col][0]
         # Check if prices are updated. If not do not do anything
         out = ""
         action = False
-        if new_macd != last_macd:
-            print(">> Detected MACD signal")
+
+        # Action only if MACD changes sign as well as stock price is above SMA
+        if new_macd != last_macd and sma:
+            print(">> Detected MACD signal as well as stock price is above SMA")
             action = True
             last_macd = new_macd
 
