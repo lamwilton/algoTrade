@@ -67,6 +67,7 @@ if __name__ == '__main__':
     sma_col = "SMA_{}".format(SMA)
     last_ohlc = get_prices(INTERVAL, FAST, SLOW, SIGNAL, SMA)
     last_macd = last_ohlc[macd_col][0] > 0
+    last_time = last_ohlc['time'][0]
 
     print("Starting MACD trading algorithm with interval = {interval} fast={fast} slow={slow} signal={signal}"
           .format(interval=INTERVAL, fast=FAST, slow=SLOW, signal=SIGNAL))
@@ -81,12 +82,14 @@ if __name__ == '__main__':
         ohlc = get_prices(INTERVAL, FAST, SLOW, SIGNAL, SMA)
         new_macd = ohlc[macd_col][0] > 0
         sma = ohlc["high"][0] > ohlc[sma_col][0]
+        new_time = ohlc["time"][0]
+
         # Check if prices are updated. If not do not do anything
         out = ""
         action = False
 
-        # Action only if MACD changes sign as well as stock price is above SMA
-        if new_macd != last_macd and sma:
+        # Action only if MACD changes sign, a new datapoint is created, as well as stock price is above SMA
+        if new_macd != last_macd and new_time != last_time and sma:
             print(">> Detected MACD signal as well as stock price is above SMA")
             action = True
             last_macd = new_macd
