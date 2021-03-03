@@ -8,9 +8,10 @@ from pykrakenapi import KrakenAPI
 from pykrakenapi.pykrakenapi import KrakenAPIError
 
 
-def get_prices(interval, fast, slow, signal, sma):
+def get_prices(pair, interval, fast, slow, signal, sma):
     """
     Return a ``pd.DataFrame`` of the OHLC data for a given pair and time interval (minutes) and the indicators
+    :param pair: What crypto market
     :param sma: period of Simple Moving Average
     :param signal:
     :param slow:
@@ -18,7 +19,7 @@ def get_prices(interval, fast, slow, signal, sma):
     :param interval:
     :return: OHLC dataframe with MACD and SMA
     """
-    ohlc, last = k.get_ohlc_data("XDGUSD", interval=interval)
+    ohlc, last = k.get_ohlc_data(pair, interval=interval)
     ohlc = ohlc.sort_index()  # Sort by ascending dates for EMA
     _ = ohlc.ta.macd(fast=fast, slow=slow, signal=signal, min_periods=None, append=True)
     _ = ohlc.ta.sma(length=sma, min_periods=None, append=True)
@@ -73,7 +74,7 @@ if __name__ == '__main__':
         time.sleep(10)
         macd_col = "MACDh_" + str(FAST) + "_" + str(SLOW) + "_" + str(SIGNAL)
         sma_col = "SMA_{}".format(SMA)
-        ohlc = get_prices(pair[0], INTERVAL, FAST, SLOW, SIGNAL)
+        ohlc = get_prices(pair[0], INTERVAL, FAST, SLOW, SIGNAL, SMA)
         new_macd = ohlc[macd_col][0] > 0
         last_macd = ohlc[macd_col][1] > 0
         sma = ohlc["high"][0] > ohlc[sma_col][0]
