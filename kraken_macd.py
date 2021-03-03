@@ -19,7 +19,7 @@ def get_prices(interval, fast, slow, signal, sma):
     :param interval:
     :return: OHLC dataframe with MACD and SMA
     """
-    ohlc, last = k.get_ohlc_data("XDGUSD", interval=interval)
+    ohlc, last = k.get_ohlc_data("XBTUSD", interval=interval)
     ohlc = ohlc.sort_index()  # Sort by ascending dates for EMA
     _ = ohlc.ta.macd(fast=fast, slow=slow, signal=signal, min_periods=None, append=True)
     _ = ohlc.ta.sma(length=sma, min_periods=None, append=True)
@@ -36,12 +36,12 @@ def plot_graph(ohlc):
     plt.show()
 
 
-def buy_doge(volume):
-    return k.add_standard_order(pair="XDGUSD", type="buy", ordertype="market", volume=volume, validate=False)
+def buy_coin(volume):
+    return k.add_standard_order(pair="XBTUSD", type="buy", ordertype="market", volume=volume, validate=False)
 
 
-def sell_doge(volume):
-    return k.add_standard_order(pair="XDGUSD", type="sell", ordertype="market", volume=volume, validate=False)
+def sell_coin(volume):
+    return k.add_standard_order(pair="XBTUSD", type="sell", ordertype="market", volume=volume, validate=False)
 
 
 if __name__ == '__main__':
@@ -51,6 +51,7 @@ if __name__ == '__main__':
     SLOW = 26
     SIGNAL = 9
     SMA = 18
+    VOLUME = 0.0002
     keyfilepath = os.path.join(os.path.expanduser('~'), "Documents/kraken_credentials.txt")
     logfilepath = os.path.join(os.path.expanduser('~'), "Documents/kraken_log.txt")
 
@@ -96,9 +97,9 @@ if __name__ == '__main__':
             last_time = new_time
 
             if new_macd:
-                out = buy_doge(50)
+                out = buy_coin(VOLUME)
             elif not new_macd:
-                out = sell_doge(50)
+                out = sell_coin(VOLUME)
 
         with open(logfilepath, 'a+') as logfile:
             curr_time = str(k.get_server_time()[0].astimezone("US/Pacific"))
